@@ -239,7 +239,6 @@ void rand_fun()
 	}
 
 	scratch[i] = '\0';
-	num = atoi(scratch);
 }
 
 //make the connection to addr on port
