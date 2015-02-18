@@ -17,6 +17,8 @@
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
+#include <process.h>
+
 
 
 
