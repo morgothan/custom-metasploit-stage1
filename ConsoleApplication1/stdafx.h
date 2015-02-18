@@ -22,7 +22,7 @@
 
 #define LHOST "192.168.23.129"
 #define LPORT 443
-#define SCRATCH_SIZE 31337
+#define SCRATCH_SIZE 1337
 
 
 // TODO: reference additional headers your program requires here

